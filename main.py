@@ -8,19 +8,23 @@ from torch.utils.data import Dataset, DataLoader, random_split
 import matplotlib.pyplot as plt
 
 
-def plot_predictions(model: nn.Module, dataloader: DataLoader):
+def plot_predictions(model: nn.Module, dataloader: DataLoader, title: str = None):
     """Take a random batch of data and plot the model-predicted labels against the actual labels.
 
     :param model: neural network.
-    :dataloader: dataloarder used to load the random batch.
+    :param dataloader: dataloarder used to load the random batch.
+    :param title: title of the plot.
+    :returns: None
     """
     instances, labels = next(iter(dataloader))
     with torch.inference_mode():
         predictions = model(instances)
 
     plt.figure()
-    plt.scatter(instances, labels, c='b', s=4)
-    plt.scatter(instances, predictions, c='r', s=4)
+    plt.title(title)
+    plt.scatter(instances, labels, c='b', s=4, label="Actual data")
+    plt.scatter(instances, predictions, c='r', s=4, label="Model predictions")
+    plt.legend()
     plt.show()
 
 
@@ -81,6 +85,29 @@ class LinearRegressionModel(nn.Module):
         return torch.matmul(instances, self.weights) + self.bias
 
 
+def training_loop(model: nn.Module, dataloader: DataLoader, number_of_epochs: int, loss_function, optimizer):
+    """raining loop for LinearRegressionModel.
+
+    Train the model using backpropagation and minibatch stochastic gradient descent (MSGD).
+
+    :param model: model to be trained.
+    :param dataloader: dataloader for the training data.
+    :param number_of_epochs: number of training epochs.
+    :param loss_function: loss function.
+    :param optimizer: optimizer.
+    :returns: None
+    """
+    for epoch in range(number_of_epochs):
+        # Apply MSGD
+        for instances, labels in dataloader:
+            model.train()
+            predictions = model(instances).unsqueeze(-1)
+            loss = loss_function(predictions, labels)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+
 # Create and split dataset. Use an 80% vs 20% split for training data vs testing data.
 number_of_features = 1
 number_of_instances = 10000
@@ -98,36 +125,25 @@ regression_model = LinearRegressionModel(number_of_features)
 
 # Create hyperparameters.
 learning_rate = 0.1
-loss_fn = nn.MSELoss()
-optimizer = torch.optim.SGD(params=regression_model.parameters(), lr=learning_rate)
 batch_size = 100
+num_epochs = 100
+
+# Create optimizer and loss function.
+mse_loss_function = nn.MSELoss()
+sgd_optimizer = torch.optim.SGD(params=regression_model.parameters(), lr=learning_rate)
 
 # Create data loaders.
 training_dataloader = DataLoader(training_dataset, batch_size, shuffle=True)
 testing_dataloader = DataLoader(testing_dataset, batch_size, shuffle=True)
 
 # Visualize predictions before training.
-plot_predictions(regression_model, testing_dataloader)
-
-
-def training_loop(model: nn.Module, dataloader: DataLoader):
-    """Training loop for LinearRegressionModel."""
-    num_epochs = 100
-    for epoch in range(num_epochs):
-        for instances, labels in dataloader:
-            model.train()
-            predictions = model(instances).unsqueeze(-1)
-            loss = loss_fn(predictions, labels)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
+plot_predictions(regression_model, testing_dataloader, title="Before training")
 
 # Execute training loop.
-training_loop(regression_model, training_dataloader)
+training_loop(regression_model, training_dataloader, num_epochs, mse_loss_function, sgd_optimizer)
 
 # Visualize predictions after training.
-plot_predictions(regression_model, testing_dataloader)
+plot_predictions(regression_model, testing_dataloader, title="After training")
 
 
 
