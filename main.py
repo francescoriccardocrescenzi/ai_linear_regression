@@ -6,6 +6,14 @@ from data import SyntheticLinearDataset
 from model import LinearRegressionModel
 from visualization import plot_predictions
 from train import Trainer
+from torch.utils.tensorboard import SummaryWriter
+
+# Create HYPERPARAMETERS.
+learning_rate = 0.1
+weight_decay = 0.001
+batch_size = 100
+num_epochs = 100
+
 
 # Create and split dataset. Use an 80% vs 20% split for training data vs testing data.
 number_of_features = 1
@@ -22,14 +30,9 @@ training_dataset, testing_dataset = random_split(dataset, [training_length, test
 # Create model.
 model = LinearRegressionModel(number_of_features)
 
-# Create hyperparameters.
-learning_rate = 0.1
-batch_size = 100
-num_epochs = 100
-
 # Create optimizer and loss function.
 loss_function = nn.MSELoss()
-optimizer = torch.optim.SGD(params=model.parameters(), lr=learning_rate)
+optimizer = torch.optim.SGD(params=model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
 # Create data loaders.
 training_dataloader = DataLoader(training_dataset, batch_size, shuffle=True)
@@ -38,9 +41,12 @@ testing_dataloader = DataLoader(testing_dataset, batch_size, shuffle=True)
 # Visualize predictions before training.
 plot_predictions(model, testing_dataloader, title="Before training")
 
-# Create Trainer object and execute training loop.
-trainer = Trainer(model, training_dataloader, testing_dataloader, loss_function, optimizer)
-trainer.train(epochs=num_epochs)
+# Create summary writer to log losses to TensorBoard.
+with SummaryWriter(log_dir="logs") as summary_writer:
+
+    # Create Trainer object and execute training loop.
+    trainer = Trainer(model, training_dataloader, testing_dataloader, loss_function, optimizer, summary_writer)
+    trainer.train(epochs=num_epochs)
 
 # Visualize predictions after training.
 plot_predictions(model, testing_dataloader, title="After training")
