@@ -7,6 +7,7 @@ from model import LinearRegressionModel
 from visualization import plot_predictions
 from train import Trainer
 from torch.utils.tensorboard import SummaryWriter
+from datetime import datetime
 
 # Create HYPERPARAMETERS.
 learning_rate = 0.1
@@ -42,7 +43,9 @@ testing_dataloader = DataLoader(testing_dataset, batch_size, shuffle=True)
 plot_predictions(model, testing_dataloader, title="Before training")
 
 # Create summary writer to log losses to TensorBoard.
-with SummaryWriter(log_dir="logs") as summary_writer:
+# Use a timestamp to differentiate between runs in the TensorBoard logs.
+timestamp = int(datetime.now().timestamp())
+with SummaryWriter(log_dir=f"logs/{timestamp}") as summary_writer:
 
     # Create Trainer object and execute training loop.
     trainer = Trainer(model, training_dataloader, testing_dataloader, loss_function, optimizer, summary_writer)
